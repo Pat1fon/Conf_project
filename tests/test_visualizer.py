@@ -1,6 +1,6 @@
 import unittest
 import xml.etree.ElementTree as ET
-from src.visualizer import validate_config
+from src.visualizer import validate_config, parse_dep_name
 
 
 class TestVisualizerConfig(unittest.TestCase):
@@ -29,6 +29,11 @@ class TestVisualizerConfig(unittest.TestCase):
         ET.SubElement(root, "package_name").text = "test"
         with self.assertRaises(KeyError):
             validate_config(root)
+
+    def test_dep_parser(self):
+        """Проверяет извлечение чистого имени из строки требований pip."""
+        self.assertEqual(parse_dep_name("requests>=2.0"), "requests")
+        self.assertEqual(parse_dep_name("click (==8.0)"), "click")
 
 
 if __name__ == "__main__":
