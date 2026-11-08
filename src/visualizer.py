@@ -84,6 +84,15 @@ def build_graph_bfs_recursive(queue, base_url, f_sub, is_test, graph, visited):
     )
 
 
+def find_reverse_deps(graph, target_package):
+    """Находит список всех пакетов, которые зависят от целевого."""
+    reverse_deps = []
+    for parent, children in graph.items():
+        if target_package in children:
+            reverse_deps.append(parent)
+    return reverse_deps
+
+
 def main():
     """Главная точка входа приложения."""
     xml_path = "config.xml"
@@ -97,7 +106,9 @@ def main():
             [cfg["package_name"]], cfg["repo_url"],
             cfg["filter_substring"], is_test, graph, visited
         )
-        print(f"Построенный граф BFS: {graph}")
+        print(f"Полный граф BFS: {graph}")
+        revs = find_reverse_deps(graph, "C")
+        print(f"Обратные зависимости для пакета 'C': {revs}")
     except (FileNotFoundError, ValueError, KeyError) as err:
         print(f"Ошибка: {err}", file=sys.stderr)
         sys.exit(1)
