@@ -1,19 +1,18 @@
 import unittest
-from src.visualizer import find_reverse_deps
+from src.visualizer import generate_d2_markup
 
 
 class TestVisualizerConfig(unittest.TestCase):
 
-    def test_reverse_dependencies(self):
-        """Проверяет корректность расчета входящих (обратных) связей."""
+    def test_d2_markup_generation(self):
+        """Проверяет корректность генерации синтаксиса связей D2."""
         mock_graph = {
-            "A": ["B", "C"],
-            "B": ["C"],
-            "C": []
+            "A": ["B"],
+            "B": ["C"]
         }
-        revs = find_reverse_deps(mock_graph, "C")
-        self.assertIn("A", revs)
-        self.assertIn("B", revs)
+        markup = generate_d2_markup(mock_graph)
+        self.assertIn("A -> B", markup)
+        self.assertIn("B -> C", markup)
 
 
 if __name__ == "__main__":

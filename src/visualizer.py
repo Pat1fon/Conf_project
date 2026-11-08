@@ -4,9 +4,6 @@ import json
 import urllib.request
 import xml.etree.ElementTree as ET
 
-vfs_tree = {}
-current_path = []
-
 
 def load_config(xml_path):
     """Загружает и парсит XML-файл конфигурации."""
@@ -48,7 +45,7 @@ def get_direct_deps(package, base_url, is_test=False):
     """Извлекает прямые зависимости пакета (из сети или из тест-файла)."""
     if is_test:
         if os.path.exists("test_graph.json"):
-            with open("test_graph.json", "r") as f:
+            with open("test_graph.json", "r", encoding="utf-8") as f:
                 mock_db = json.load(f)
                 return mock_db.get(package, [])
         return []
@@ -84,13 +81,13 @@ def build_graph_bfs_recursive(queue, base_url, f_sub, is_test, graph, visited):
     )
 
 
-def find_reverse_deps(graph, target_package):
-    """Находит список всех пакетов, которые зависят от целевого."""
-    reverse_deps = []
+def generate_d2_markup(graph):
+    """Генерирует текстовое представление графа на языке D2."""
+    lines = []
     for parent, children in graph.items():
-        if target_package in children:
-            reverse_deps.append(parent)
-    return reverse_deps
+        for child in children:
+            lines.append(f"{parent} -> {child}")
+    return "\n".join(lines)
 
 
 def main():
@@ -106,9 +103,8 @@ def main():
             [cfg["package_name"]], cfg["repo_url"],
             cfg["filter_substring"], is_test, graph, visited
         )
-        print(f"Полный граф BFS: {graph}")
-        revs = find_reverse_deps(graph, "C")
-        print(f"Обратные зависимости для пакета 'C': {revs}")
+        print("СГЕНЕРИРОВАННЫЙ ГРАФ D2")
+        print(generate_d2_markup(graph))
     except (FileNotFoundError, ValueError, KeyError) as err:
         print(f"Ошибка: {err}", file=sys.stderr)
         sys.exit(1)
