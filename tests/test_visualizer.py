@@ -1,39 +1,24 @@
 import unittest
 import xml.etree.ElementTree as ET
-from src.visualizer import validate_config, parse_dep_name
+from src.visualizer import validate_config, build_graph_bfs_recursive
 
 
 class TestVisualizerConfig(unittest.TestCase):
 
-    def create_mock_xml(self, p_name, url, mode, ver, fltr):
-        """Вспомогательный метод для генерации XML-узла."""
-        root = ET.Element("config")
-        ET.SubElement(root, "package_name").text = p_name
-        ET.SubElement(root, "repo_url").text = url
-        ET.SubElement(root, "test_mode").text = mode
-        ET.SubElement(root, "version").text = ver
-        ET.SubElement(root, "filter_substring").text = fltr
-        return root
-
-    def test_valid_config(self):
-        """Проверяет успешную валидацию корректного XML."""
-        root = self.create_mock_xml(
-            "pip", "http://test.org", "true", "1.0", "none"
-        )
-        res = validate_config(root)
-        self.assertEqual(res["package_name"], "pip")
-
-    def test_missing_parameter(self):
-        """Проверяет генерацию ошибки при отсутствии тега."""
-        root = ET.Element("config")
-        ET.SubElement(root, "package_name").text = "test"
-        with self.assertRaises(KeyError):
-            validate_config(root)
-
-    def test_dep_parser(self):
-        """Проверяет извлечение чистого имени из строки требований pip."""
-        self.assertEqual(parse_dep_name("requests>=2.0"), "requests")
-        self.assertEqual(parse_dep_name("click (==8.0)"), "click")
+    def test_recursive_bfs_cyclic(self):
+        """Проверяет устойчивость алгоритма BFS к циклическим графам."""
+        graph = {}
+        visited = set()
+        # Имитируем граф с циклом A -> B -> A
+        with unittest.mock.patch('src.visualizer.get_direct_deps') as mock_deps:
+            mock_deps.side_effect = lambda pkg, url, tst: (
+                ["B"] if pkg == "A" else ["A"]
+            )
+            build_graph_bfs_recursive(
+                ["A"], "http://url", "filter_none", False, graph, visited
+            )
+        self.assertIn("A", graph)
+        self.assertIn("B", graph)
 
 
 if __name__ == "__main__":

@@ -4,6 +4,9 @@ import json
 import urllib.request
 import xml.etree.ElementTree as ET
 
+vfs_tree = {}
+current_path = []
+
 
 def load_config(xml_path):
     """Загружает и парсит XML-файл конфигурации."""
@@ -41,19 +44,44 @@ def parse_dep_name(req_str):
     return "".join(parts)
 
 
-def get_direct_deps(package, base_url):
-    """Извлекает прямые зависимости пакета из API PyPI."""
+def get_direct_deps(package, base_url, is_test=False):
+    """Извлекает прямые зависимости пакета (из сети или из тест-файла)."""
+    if is_test:
+        if os.path.exists("test_graph.json"):
+            with open("test_graph.json", "r") as f:
+                mock_db = json.load(f)
+                return mock_db.get(package, [])
+        return []
     url = f"{base_url}/{package}/json"
     try:
         with urllib.request.urlopen(url, timeout=5) as response:
             data = json.loads(response.read().decode())
-            info = data.get("info", {})
-            reqs = info.get("requires_dist")
+            reqs = data.get("info", {}).get("requires_dist")
             if reqs is None:
                 return []
             return [parse_dep_name(r) for r in reqs if "extra ==" not in r]
     except Exception:
         return []
+
+
+def build_graph_bfs_recursive(queue, base_url, f_sub, is_test, graph, visited):
+    """Рекурсивно строит граф транзитивных зависимостей методом BFS."""
+    if not queue:
+        return graph
+    next_queue = []
+    for node in queue:
+        if node in visited:
+            continue
+        visited.add(node)
+        raw_deps = get_direct_deps(node, base_url, is_test)
+        filtered_deps = [d for d in raw_deps if f_sub not in d]
+        graph[node] = filtered_deps
+        for dep in filtered_deps:
+            if dep not in visited:
+                next_queue.append(dep)
+    return build_graph_bfs_recursive(
+        next_queue, base_url, f_sub, is_test, graph, visited
+    )
 
 
 def main():
@@ -62,9 +90,14 @@ def main():
     try:
         root = load_config(xml_path)
         cfg = validate_config(root)
-        print(f"Пакет: {cfg['package_name']} (Версия: {cfg['version']})")
-        deps = get_direct_deps(cfg["package_name"], cfg["repo_url"])
-        print(f"Прямые зависимости: {deps}")
+        is_test = cfg["test_mode"].lower() == "true"
+        graph = {}
+        visited = set()
+        build_graph_bfs_recursive(
+            [cfg["package_name"]], cfg["repo_url"],
+            cfg["filter_substring"], is_test, graph, visited
+        )
+        print(f"Построенный граф BFS: {graph}")
     except (FileNotFoundError, ValueError, KeyError) as err:
         print(f"Ошибка: {err}", file=sys.stderr)
         sys.exit(1)
