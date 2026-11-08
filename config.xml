@@ -1,0 +1,7 @@
+<config>
+    <package_name>requests</package_name>
+    <repo_url>https://pypi.org</repo_url>
+    <test_mode>false</test_mode>
+    <version>2.31.0</version>
+    <filter_substring>test</filter_substring>
+</config>
