@@ -2,7 +2,7 @@ import sys
 import os
 import json
 import urllib.request
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as element_tree
 
 
 def load_config(xml_path):
@@ -10,9 +10,9 @@ def load_config(xml_path):
     if not os.path.exists(xml_path):
         raise FileNotFoundError(f"Файл не найден: {xml_path}")
     try:
-        tree = ET.parse(xml_path)
+        tree = element_tree.parse(xml_path)
         return tree.getroot()
-    except ET.ParseError as err:
+    except element_tree.ParseError as err:
         raise ValueError(f"Ошибка XML: {err}")
 
 
